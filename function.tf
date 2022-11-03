@@ -30,7 +30,6 @@ resource "azurerm_windows_function_app" "main" {
     "WEBSITE_CONTENTOVERVNET"           = "1",
     "EventHub__fullyQualifiedNamespace" = "${azurerm_eventhub_namespace.main.name}.servicebus.windows.net"
     "EVENT_HUB_NAME"                    = azurerm_eventhub.main.name
-    "VAULT_URI"                         = azurerm_key_vault.main.vault_uri
   }
 
   identity {

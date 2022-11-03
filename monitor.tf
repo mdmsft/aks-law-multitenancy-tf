@@ -74,4 +74,8 @@ resource "azurerm_log_analytics_workspace" "namespace" {
   resource_group_name = azurerm_resource_group.namespace[each.key].name
   daily_quota_gb      = var.log_analytics_workspace_daily_quota_gb
   retention_in_days   = var.log_analytics_workspace_retention_in_days
+
+  tags = {
+    namespace = each.key
+  }
 }

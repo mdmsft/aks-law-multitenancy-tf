@@ -18,18 +18,6 @@ resource "azurerm_key_vault_secret" "application_insights" {
   ]
 }
 
-resource "azurerm_key_vault_secret" "namespace" {
-  for_each     = local.namespaces
-  name         = each.key
-  key_vault_id = azurerm_key_vault.main.id
-  value        = "${azurerm_log_analytics_workspace.namespace[each.key].workspace_id}:${azurerm_log_analytics_workspace.namespace[each.key].primary_shared_key}"
-
-
-  depends_on = [
-    azurerm_role_assignment.key_vault_administrator
-  ]
-}
-
 resource "azurerm_role_assignment" "key_vault_administrator" {
   role_definition_name = "Key Vault Administrator"
   scope                = azurerm_key_vault.main.id
