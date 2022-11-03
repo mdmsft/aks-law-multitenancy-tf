@@ -18,4 +18,6 @@ terraform init \
     -backend-config="client_secret=$client_secret" \
     -backend-config="resource_group_name=$resource_group_name" \
     -backend-config="storage_account_name=$storage_account_name" \
-    -backend-config="key=$key" 
+    -backend-config="key=$key" \
+    -reconfigure \
+    -upgrade

@@ -15,3 +15,9 @@ resource "azurerm_resource_group" "main" {
     ]
   }
 }
+
+resource "azurerm_resource_group" "namespace" {
+  for_each = local.namespaces
+  name     = "rg-${each.key}-${var.environment}-${var.region}"
+  location = var.location
+}

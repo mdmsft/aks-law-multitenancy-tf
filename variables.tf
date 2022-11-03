@@ -36,8 +36,11 @@ variable "client_secret" {
 }
 
 variable "address_space" {
-  type    = string
-  default = "192.168.255.0/24"
+  type = list(string)
+  default = [
+    "192.168.255.0/24",
+    "10.255.255.0/24",
+  ]
 }
 
 variable "kubernetes_cluster_orchestrator_version" {
@@ -256,4 +259,9 @@ variable "container_registry_sku" {
 variable "nat_gateway_public_ip_prefix_length" {
   type    = number
   default = 28
+}
+
+variable "key_vault_soft_delete_retention_days" {
+  type    = number
+  default = 7
 }
