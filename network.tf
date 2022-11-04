@@ -9,6 +9,7 @@ locals {
     blob     = "privatelink.blob.core.windows.net"
     table    = "privatelink.table.core.windows.net"
     vault    = "privatelink.vaultcore.windows.net"
+    config   = "privatelink.azconfig.io"
   }
 }
 

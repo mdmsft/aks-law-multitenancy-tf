@@ -18,6 +18,27 @@ resource "azurerm_key_vault_secret" "application_insights" {
   ]
 }
 
+resource "azurerm_key_vault_secret" "app_configuration" {
+  name         = "app-configuration"
+  key_vault_id = azurerm_key_vault.main.id
+  value        = azurerm_app_configuration.main.endpoint
+
+  depends_on = [
+    azurerm_role_assignment.key_vault_administrator
+  ]
+}
+
+resource "azurerm_key_vault_secret" "namespace" {
+  for_each     = local.namespaces
+  name         = each.key
+  value        = azurerm_log_analytics_workspace.namespace[each.key].primary_shared_key
+  key_vault_id = azurerm_key_vault.main.id
+
+  depends_on = [
+    azurerm_role_assignment.key_vault_administrator
+  ]
+}
+
 resource "azurerm_role_assignment" "key_vault_administrator" {
   role_definition_name = "Key Vault Administrator"
   scope                = azurerm_key_vault.main.id

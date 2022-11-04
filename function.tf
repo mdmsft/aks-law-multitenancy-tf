@@ -13,12 +13,18 @@ resource "azurerm_windows_function_app" "main" {
   service_plan_id               = azurerm_service_plan.main.id
   storage_account_name          = azurerm_storage_account.main.name
   storage_uses_managed_identity = true
+  builtin_logging_enabled       = true
 
   site_config {
     always_on                              = true
     use_32_bit_worker                      = false
     vnet_route_all_enabled                 = true
     application_insights_connection_string = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=${azurerm_key_vault_secret.application_insights.name})"
+
+    app_service_logs {
+      disk_quota_mb         = 100
+      retention_period_days = 1
+    }
 
     application_stack {
       dotnet_version              = "6"
@@ -30,6 +36,8 @@ resource "azurerm_windows_function_app" "main" {
     "WEBSITE_CONTENTOVERVNET"           = "1",
     "EventHub__fullyQualifiedNamespace" = "${azurerm_eventhub_namespace.main.name}.servicebus.windows.net"
     "EVENT_HUB_NAME"                    = azurerm_eventhub.main.name
+    "APP_CONFIGURATION_URI"             = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=${azurerm_key_vault_secret.app_configuration.name})"
+    "VAULT_URI"                         = azurerm_key_vault.main.vault_uri
   }
 
   identity {
@@ -38,7 +46,8 @@ resource "azurerm_windows_function_app" "main" {
 
   lifecycle {
     ignore_changes = [
-      tags
+      tags,
+      virtual_network_subnet_id
     ]
   }
 }
@@ -83,4 +92,10 @@ resource "azurerm_role_assignment" "function_azure_event_hubs_data_receiver" {
   role_definition_name = "Azure Event Hubs Data Receiver"
   principal_id         = azurerm_windows_function_app.main.identity.0.principal_id
   scope                = azurerm_eventhub.main.id
+}
+
+resource "azurerm_role_assignment" "function_app_configuration_data_reader" {
+  role_definition_name = "App Configuration Data Reader"
+  principal_id         = azurerm_windows_function_app.main.identity.0.principal_id
+  scope                = azurerm_app_configuration.main.id
 }

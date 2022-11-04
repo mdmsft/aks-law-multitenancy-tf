@@ -7,13 +7,7 @@ resource "azurerm_storage_account" "main" {
   account_replication_type        = "ZRS"
   account_kind                    = "StorageV2"
   allow_nested_items_to_be_public = false
-  public_network_access_enabled   = false
   default_to_oauth_authentication = true
-
-  network_rules {
-    bypass         = ["AzureServices"]
-    default_action = "Deny"
-  }
 }
 
 module "storage_endpoint" {

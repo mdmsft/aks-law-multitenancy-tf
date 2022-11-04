@@ -14,6 +14,12 @@ resource "azurerm_eventhub_namespace" "main" {
     public_network_access_enabled  = false
     trusted_service_access_enabled = true
   }
+
+  lifecycle {
+    ignore_changes = [
+      network_rulesets.0.default_action
+    ]
+  }
 }
 
 resource "azurerm_eventhub" "main" {
