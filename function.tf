@@ -3,7 +3,7 @@ resource "azurerm_service_plan" "main" {
   resource_group_name = azurerm_resource_group.main.name
   location            = azurerm_resource_group.main.location
   os_type             = "Windows"
-  sku_name            = "B1"
+  sku_name            = var.service_plan_sku_name
 }
 
 resource "azurerm_windows_function_app" "main" {
@@ -21,11 +21,6 @@ resource "azurerm_windows_function_app" "main" {
     vnet_route_all_enabled                 = true
     application_insights_connection_string = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=${azurerm_key_vault_secret.application_insights.name})"
 
-    app_service_logs {
-      disk_quota_mb         = 100
-      retention_period_days = 1
-    }
-
     application_stack {
       dotnet_version              = "6"
       use_dotnet_isolated_runtime = true
@@ -37,6 +32,7 @@ resource "azurerm_windows_function_app" "main" {
     "EventHub__fullyQualifiedNamespace" = "${azurerm_eventhub_namespace.main.name}.servicebus.windows.net"
     "EVENT_HUB_NAME"                    = azurerm_eventhub.main.name
     "APP_CONFIGURATION_URI"             = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=${azurerm_key_vault_secret.app_configuration.name})"
+    "BLOB_CONTAINER_URI"                = "${trimsuffix(azurerm_storage_account.main.primary_blob_endpoint, "/")}/${azurerm_storage_container.messages.name}"
     "VAULT_URI"                         = azurerm_key_vault.main.vault_uri
   }
 
@@ -76,6 +72,18 @@ resource "azurerm_role_assignment" "function_storage_table_data_contributor" {
   scope                = azurerm_storage_account.main.id
 }
 
+resource "azurerm_role_assignment" "function_storage_queue_data_contributor" {
+  role_definition_name = "Storage Queue Data Contributor"
+  principal_id         = azurerm_windows_function_app.main.identity.0.principal_id
+  scope                = azurerm_storage_account.main.id
+}
+
+resource "azurerm_role_assignment" "function_storage_file_data_smb_share_contributor" {
+  role_definition_name = "Storage File Data SMB Share Contributor"
+  principal_id         = azurerm_windows_function_app.main.identity.0.principal_id
+  scope                = azurerm_storage_account.main.id
+}
+
 resource "azurerm_role_assignment" "function_network_contributor" {
   role_definition_name = "Network Contributor"
   principal_id         = azurerm_windows_function_app.main.identity.0.principal_id
@@ -88,6 +96,13 @@ resource "azurerm_role_assignment" "function_monitoring_metrics_publisher" {
   scope                = "/subscriptions/${var.subscription_id}"
 }
 
+resource "azurerm_role_assignment" "function_monitoring_metrics_publisher_product" {
+  provider             = azurerm.product
+  role_definition_name = "Monitoring Metrics Publisher"
+  principal_id         = azurerm_windows_function_app.main.identity.0.principal_id
+  scope                = "/subscriptions/${var.product_subscription_id}"
+}
+
 resource "azurerm_role_assignment" "function_azure_event_hubs_data_receiver" {
   role_definition_name = "Azure Event Hubs Data Receiver"
   principal_id         = azurerm_windows_function_app.main.identity.0.principal_id
@@ -98,4 +113,29 @@ resource "azurerm_role_assignment" "function_app_configuration_data_reader" {
   role_definition_name = "App Configuration Data Reader"
   principal_id         = azurerm_windows_function_app.main.identity.0.principal_id
   scope                = azurerm_app_configuration.main.id
+}
+
+resource "azurerm_monitor_diagnostic_setting" "function" {
+  name                       = "Logs"
+  log_analytics_workspace_id = azurerm_log_analytics_workspace.main.id
+  target_resource_id         = azurerm_windows_function_app.main.id
+
+  dynamic "log" {
+    for_each = data.azurerm_monitor_diagnostic_categories.function.log_category_types
+
+    content {
+      category = log.value
+      enabled  = true
+      retention_policy {
+        days    = 1
+        enabled = true
+      }
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      metric
+    ]
+  }
 }

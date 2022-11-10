@@ -39,8 +39,7 @@ locals {
     "monitor",
     "oms",
     "ods",
-    "agentsvc",
-    "blob"
+    "agentsvc"
   ]
 }
 
@@ -54,7 +53,8 @@ module "monitor_private_link_scope_endpoint" {
   private_dns_zone_ids           = [for zone in local.monitor_private_dns_zones : azurerm_private_dns_zone.main[zone].id]
 
   depends_on = [
-    azurerm_monitor_private_link_scope.main
+    azurerm_monitor_private_link_scope.main,
+    azurerm_private_dns_zone.main
   ]
 }
 
@@ -67,15 +67,32 @@ resource "azurerm_log_analytics_data_export_rule" "eventhub" {
   enabled                 = true
 }
 
-resource "azurerm_log_analytics_workspace" "namespace" {
-  for_each            = local.namespaces
-  name                = "log-${each.key}-${local.common_suffix}"
-  location            = azurerm_resource_group.namespace[each.key].location
-  resource_group_name = azurerm_resource_group.namespace[each.key].name
-  daily_quota_gb      = var.log_analytics_workspace_daily_quota_gb
-  retention_in_days   = var.log_analytics_workspace_retention_in_days
+resource "azurerm_log_analytics_workspace" "product" {
+  for_each            = var.products
+  provider            = azurerm.product
+  name                = "log-${local.resource_suffix}-${each.key}"
+  location            = azurerm_resource_group.product[each.key].location
+  resource_group_name = azurerm_resource_group.product[each.key].name
+  daily_quota_gb      = var.log_analytics_workspace_daily_quota_gb_per_product
+  retention_in_days   = var.log_analytics_workspace_retention_in_days_per_product
+}
 
-  tags = {
-    namespace = each.key
-  }
+resource "azurerm_monitor_private_link_scoped_service" "product" {
+  for_each            = var.products
+  name                = "amplss-${local.resource_suffix}-log-${each.key}"
+  resource_group_name = azurerm_resource_group.main.name
+  scope_name          = azurerm_monitor_private_link_scope.main.name
+  linked_resource_id  = azurerm_log_analytics_workspace.product[each.key].id
+
+  depends_on = [
+    azurerm_role_assignment.monitoring_contributor
+  ]
+}
+
+resource "azurerm_role_assignment" "monitoring_contributor" {
+  for_each             = var.products
+  provider             = azurerm.product
+  role_definition_name = "Monitoring Contributor"
+  principal_id         = data.azurerm_client_config.main.object_id
+  scope                = azurerm_log_analytics_workspace.product[each.key].id
 }

@@ -1,6 +1,5 @@
 locals {
   private_dns_zones = {
-    registry = "privatelink.azurecr.io"
     eventhub = "privatelink.servicebus.windows.net"
     monitor  = "privatelink.monitor.azure.com"
     oms      = "privatelink.oms.opinsights.azure.com"
@@ -8,6 +7,8 @@ locals {
     agentsvc = "privatelink.agentsvc.azure-automation.net"
     blob     = "privatelink.blob.core.windows.net"
     table    = "privatelink.table.core.windows.net"
+    queue    = "privatelink.queue.core.windows.net"
+    file     = "privatelink.file.core.windows.net"
     vault    = "privatelink.vaultcore.windows.net"
     config   = "privatelink.azconfig.io"
   }

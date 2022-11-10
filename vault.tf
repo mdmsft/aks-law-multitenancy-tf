@@ -1,5 +1,5 @@
 resource "azurerm_key_vault" "main" {
-  name                       = substr("kv-${local.project}-${var.environment}-${var.region}", 0, 24)
+  name                       = substr("kv-${var.project}-${var.environment}-${var.region}", 0, 24)
   location                   = azurerm_resource_group.main.location
   resource_group_name        = azurerm_resource_group.main.name
   enable_rbac_authorization  = true
@@ -28,10 +28,10 @@ resource "azurerm_key_vault_secret" "app_configuration" {
   ]
 }
 
-resource "azurerm_key_vault_secret" "namespace" {
-  for_each     = local.namespaces
+resource "azurerm_key_vault_secret" "product" {
+  for_each     = var.products
   name         = each.key
-  value        = azurerm_log_analytics_workspace.namespace[each.key].primary_shared_key
+  value        = azurerm_log_analytics_workspace.product[each.key].primary_shared_key
   key_vault_id = azurerm_key_vault.main.id
 
   depends_on = [
@@ -49,6 +49,12 @@ resource "azurerm_role_assignment" "key_vault_secrets_user" {
   role_definition_name = "Key Vault Secrets User"
   scope                = azurerm_key_vault.main.id
   principal_id         = azurerm_windows_function_app.main.identity.0.principal_id
+}
+
+resource "azurerm_role_assignment" "key_vault_secrets_user_global_admin" {
+  role_definition_name = "Key Vault Secrets User"
+  scope                = azurerm_key_vault.main.id
+  principal_id         = var.global_administrator
 }
 
 module "vault_endpoint" {

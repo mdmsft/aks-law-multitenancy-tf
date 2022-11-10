@@ -3,9 +3,9 @@ $subscription_id = $env:TF_VAR_subscription_id
 $client_id = $env:TF_VAR_client_id
 $client_secret = $env:TF_VAR_client_secret
 
-$resource_group_name="mdmsft"
-$storage_account_name="mdmsft"
-$key="law"
+$resource_group_name=""
+$storage_account_name=""
+$key=""
 
 terraform init `
     -backend-config="tenant_id=$tenant_id" `

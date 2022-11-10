@@ -35,6 +35,23 @@ variable "client_secret" {
   sensitive = true
 }
 
+variable "product_tenant_id" {
+  type = string
+}
+
+variable "product_subscription_id" {
+  type = string
+}
+
+variable "product_client_id" {
+  type = string
+}
+
+variable "product_client_secret" {
+  type      = string
+  sensitive = true
+}
+
 variable "address_space" {
   type = list(string)
   default = [
@@ -243,7 +260,7 @@ variable "kubernetes_service_rbac_writers" {
 
 variable "log_analytics_workspace_daily_quota_gb" {
   type    = number
-  default = 1
+  default = 30
 }
 
 variable "log_analytics_workspace_retention_in_days" {
@@ -251,9 +268,14 @@ variable "log_analytics_workspace_retention_in_days" {
   default = 30
 }
 
-variable "container_registry_sku" {
-  type    = string
-  default = "Basic"
+variable "log_analytics_workspace_daily_quota_gb_per_product" {
+  type    = number
+  default = 1
+}
+
+variable "log_analytics_workspace_retention_in_days_per_product" {
+  type    = number
+  default = 30
 }
 
 variable "nat_gateway_public_ip_prefix_length" {
@@ -264,4 +286,71 @@ variable "nat_gateway_public_ip_prefix_length" {
 variable "key_vault_soft_delete_retention_days" {
   type    = number
   default = 7
+}
+
+variable "app_configuration_purge_protection_enabled" {
+  type    = bool
+  default = false
+}
+
+variable "app_configuration_soft_delete_retention_days" {
+  type    = number
+  default = 1
+}
+
+variable "eventhub_auto_inflate_enabled" {
+  type    = bool
+  default = true
+}
+
+variable "eventhub_zone_redundant" {
+  type    = bool
+  default = true
+}
+
+variable "eventhub_maximum_throughput_units" {
+  type    = number
+  default = 3
+}
+
+variable "eventhub_partition_count" {
+  type    = number
+  default = 1
+}
+
+variable "eventhub_message_retention" {
+  type    = number
+  default = 1
+}
+
+variable "service_plan_sku_name" {
+  type    = string
+  default = "B1"
+}
+
+variable "storage_account_replication_type" {
+  type    = string
+  default = "ZRS"
+}
+
+variable "storage_account_access_tier" {
+  type    = string
+  default = "Cool"
+}
+
+variable "products" {
+  type = map(string)
+  default = {
+    "red"    = "red"
+    "orange" = "orange"
+    "yellow" = "yellow"
+    "green"  = "green"
+    "blue"   = "blue"
+    "indigo" = "indigo"
+    "violet" = "violet"
+  }
+}
+
+variable "global_administrator" {
+  type = string
 }

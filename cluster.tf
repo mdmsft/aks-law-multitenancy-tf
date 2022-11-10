@@ -105,12 +105,6 @@ resource "azurerm_role_assignment" "cluster_network_contributor" {
   principal_id         = azurerm_kubernetes_cluster.main.identity.0.principal_id
 }
 
-resource "azurerm_role_assignment" "registry_pull" {
-  role_definition_name = "AcrPull"
-  scope                = azurerm_container_registry.main.id
-  principal_id         = azurerm_kubernetes_cluster.main.kubelet_identity[0].object_id
-}
-
 resource "null_resource" "kube_config" {
   triggers = {
     cluster = azurerm_kubernetes_cluster.main.id
