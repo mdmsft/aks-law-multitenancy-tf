@@ -1,9 +1,10 @@
 resource "azurerm_log_analytics_workspace" "main" {
-  name                = "log-${local.resource_suffix}"
-  location            = azurerm_resource_group.main.location
-  resource_group_name = azurerm_resource_group.main.name
-  daily_quota_gb      = var.log_analytics_workspace_daily_quota_gb
-  retention_in_days   = var.log_analytics_workspace_retention_in_days
+  name                       = "log-${local.resource_suffix}"
+  location                   = azurerm_resource_group.main.location
+  resource_group_name        = azurerm_resource_group.main.name
+  daily_quota_gb             = var.log_analytics_workspace_daily_quota_gb
+  retention_in_days          = var.log_analytics_workspace_retention_in_days
+  internet_ingestion_enabled = false
 }
 
 resource "azurerm_application_insights" "main" {
@@ -68,13 +69,18 @@ resource "azurerm_log_analytics_data_export_rule" "eventhub" {
 }
 
 resource "azurerm_log_analytics_workspace" "product" {
-  for_each            = var.products
-  provider            = azurerm.product
-  name                = "log-${local.resource_suffix}-${each.key}"
-  location            = azurerm_resource_group.product[each.key].location
-  resource_group_name = azurerm_resource_group.product[each.key].name
-  daily_quota_gb      = var.log_analytics_workspace_daily_quota_gb_per_product
-  retention_in_days   = var.log_analytics_workspace_retention_in_days_per_product
+  for_each                   = var.products
+  provider                   = azurerm.product
+  name                       = "log-${local.resource_suffix}-${each.key}"
+  location                   = azurerm_resource_group.product[each.key].location
+  resource_group_name        = azurerm_resource_group.product[each.key].name
+  daily_quota_gb             = var.log_analytics_workspace_daily_quota_gb_per_product
+  retention_in_days          = var.log_analytics_workspace_retention_in_days_per_product
+  internet_ingestion_enabled = false
+
+  tags = {
+    namespace = each.key
+  }
 }
 
 resource "azurerm_monitor_private_link_scoped_service" "product" {

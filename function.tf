@@ -19,7 +19,7 @@ resource "azurerm_windows_function_app" "main" {
     always_on                              = true
     use_32_bit_worker                      = false
     vnet_route_all_enabled                 = true
-    application_insights_connection_string = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=${azurerm_key_vault_secret.application_insights.name})"
+    application_insights_connection_string = azurerm_application_insights.main.connection_string
 
     application_stack {
       dotnet_version              = "6"
@@ -31,9 +31,8 @@ resource "azurerm_windows_function_app" "main" {
     "WEBSITE_CONTENTOVERVNET"           = "1",
     "EventHub__fullyQualifiedNamespace" = "${azurerm_eventhub_namespace.main.name}.servicebus.windows.net"
     "EVENT_HUB_NAME"                    = azurerm_eventhub.main.name
-    "APP_CONFIGURATION_URI"             = "@Microsoft.KeyVault(VaultName=${azurerm_key_vault.main.name};SecretName=${azurerm_key_vault_secret.app_configuration.name})"
     "BLOB_CONTAINER_URI"                = "${trimsuffix(azurerm_storage_account.main.primary_blob_endpoint, "/")}/${azurerm_storage_container.messages.name}"
-    "VAULT_URI"                         = azurerm_key_vault.main.vault_uri
+    "SUBSCRIPTION_ID"                   = var.product_subscription_id
   }
 
   identity {
@@ -51,13 +50,6 @@ resource "azurerm_windows_function_app" "main" {
 resource "azurerm_app_service_virtual_network_swift_connection" "main" {
   app_service_id = azurerm_windows_function_app.main.id
   subnet_id      = azurerm_subnet.function.id
-}
-
-resource "azurerm_app_service_source_control" "main" {
-  app_id                 = azurerm_windows_function_app.main.id
-  branch                 = "main"
-  repo_url               = "https://github.com/mdmsft/ContainerLogExporter"
-  use_manual_integration = true
 }
 
 resource "azurerm_role_assignment" "function_storage_blob_data_contributor" {
@@ -90,17 +82,10 @@ resource "azurerm_role_assignment" "function_network_contributor" {
   scope                = azurerm_subnet.function.id
 }
 
-resource "azurerm_role_assignment" "function_monitoring_metrics_publisher" {
+resource "azurerm_role_assignment" "function_monitoring_metrics_publisher_application_insights" {
   role_definition_name = "Monitoring Metrics Publisher"
   principal_id         = azurerm_windows_function_app.main.identity.0.principal_id
-  scope                = "/subscriptions/${var.subscription_id}"
-}
-
-resource "azurerm_role_assignment" "function_monitoring_metrics_publisher_product" {
-  provider             = azurerm.product
-  role_definition_name = "Monitoring Metrics Publisher"
-  principal_id         = azurerm_windows_function_app.main.identity.0.principal_id
-  scope                = "/subscriptions/${var.product_subscription_id}"
+  scope                = azurerm_application_insights.main.id
 }
 
 resource "azurerm_role_assignment" "function_azure_event_hubs_data_receiver" {
@@ -109,10 +94,12 @@ resource "azurerm_role_assignment" "function_azure_event_hubs_data_receiver" {
   scope                = azurerm_eventhub.main.id
 }
 
-resource "azurerm_role_assignment" "function_app_configuration_data_reader" {
-  role_definition_name = "App Configuration Data Reader"
-  principal_id         = azurerm_windows_function_app.main.identity.0.principal_id
-  scope                = azurerm_app_configuration.main.id
+resource "azurerm_role_assignment" "function_log_analytics_data_publisher" {
+  provider           = azurerm.product
+  for_each           = var.products
+  role_definition_id = azurerm_role_definition.log_analytics_data_publisher.role_definition_resource_id
+  principal_id       = azurerm_windows_function_app.main.identity.0.principal_id
+  scope              = azurerm_log_analytics_workspace.product[each.key].id
 }
 
 resource "azurerm_monitor_diagnostic_setting" "function" {

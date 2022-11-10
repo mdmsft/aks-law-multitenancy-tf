@@ -9,8 +9,6 @@ locals {
     table    = "privatelink.table.core.windows.net"
     queue    = "privatelink.queue.core.windows.net"
     file     = "privatelink.file.core.windows.net"
-    vault    = "privatelink.vaultcore.windows.net"
-    config   = "privatelink.azconfig.io"
   }
 }
 
